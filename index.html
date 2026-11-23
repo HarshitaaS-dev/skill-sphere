@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillSphere – Examination Portal</title>
+  <meta name="description" content="SkillSphere: Student technical examination portal with timed assessments, negative marking, instant grading, and password-protected teacher console." />
+
+  <!-- SVG Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563EB'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>" />
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            navy: {
+              700: '#1b2a4a',
+              800: '#101d36',
+              900: '#0a1426',
+              950: '#050a14',
+            },
+            royal: {
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Firebase Integration -->
+  <script src="firebase-config.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans flex flex-col min-h-screen">
+
+  <!-- ================= TOP NAVIGATION BAR ================= -->
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo & Student Portal Tag -->
+      <div class="flex items-center gap-3 cursor-pointer select-none" onclick="navigateTo('student')">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-navy-950 via-royal-700 to-royal-500 flex items-center justify-center text-white shadow-md shadow-royal-600/20">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-lg font-extrabold tracking-tight text-navy-950 flex items-center gap-1">
+            Skill<span class="text-royal-600">Sphere</span>
+            <span class="ml-1 text-[11px] font-semibold text-royal-700 bg-royal-50 border border-royal-200 px-2 py-0.5 rounded-md">Exam Portal</span>
+          </div>
+          <div class="text-[10.5px] font-medium text-slate-500 -mt-0.5">
+            Test Your Skills. Track Your Growth.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Action Controls -->
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        
+        <!-- Student Mode Active Pill (when on student view) -->
+        <div id="nav-student-pill" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Student Desk</span>
+        </div>
+
+        <!-- Teacher Mode Active Pill (when on teacher view) -->
+        <div id="nav-teacher-pill" class="hidden items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-600"></i>
+          <span>Teacher Mode Active</span>
+        </div>
+
+        <!-- Teacher Panel Button (Top Right with Password Protection) -->
+        <button id="btn-teacher-toggle" onclick="handleTeacherPanelClick()" class="text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-all flex items-center gap-1.5 shadow-2xs">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-royal-600" id="teacher-btn-icon"></i>
+          <span id="teacher-btn-label">Teacher Panel</span>
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= NOTIFICATION TOAST CONTAINER ================= -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ================= MAIN VIEWPORT ================= -->
+  <main id="app-viewport" class="flex-1">
+
+    <!-- VIEW 1: STUDENT EXAMINATION DESK (THE MAIN PAGE) -->
+    <div id="view-student" class="view-section py-6 sm:py-8 bg-slate-50 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-7">
+        
+        <!-- Student Header Card with Quick Details -->
+        <div class="bg-gradient-to-r from-navy-950 via-navy-900 to-royal-900 rounded-2xl p-6 sm:p-7 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div>
+            <div class="inline-flex items-center gap-1.5 bg-royal-500/20 border border-royal-400/30 text-royal-300 text-xs px-3 py-0.5 rounded-full font-semibold mb-2">
+              <i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i> Candidate Assessment Desk
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2">
+              <span>Ready for Assessment,</span>
+              <span id="student-name-display" class="text-royal-300 cursor-pointer hover:underline" onclick="promptEditStudentName()" title="Click to edit name">Alex Rivera</span>
+              <button onclick="promptEditStudentName()" class="text-slate-400 hover:text-white" title="Edit Student Profile">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+            </h1>
+            <p class="text-slate-300 text-xs mt-1">Roll ID: CS-2024-0418 • Select a timed quiz below to start examination.</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="scrollToCatalog()" class="btn-primary text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i> Select Exam
+            </button>
+            <button onclick="clearDemoAttemptHistory()" class="bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-3.5 py-2.5 rounded-xl transition-colors">
+              Reset My Records
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Key Stat Metric Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center justify-between text-slate-500 mb-1.5">
+              <span class="text-xs font-bold uppercase tracking-wider">Attempted</span>
+              <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="file-check-2" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-navy-950" id="stat-total-attempts">0</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Quizzes submitted</div>
+          </div>
+
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center justify-between text-slate-500 mb-1.5">
+              <span class="text-xs font-bold uppercase tracking-wider">Average Score</span>
+              <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-600" id="stat-avg-score">0.0%</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Across all tests</div>
+          </div>
+
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center justify-between text-slate-500 mb-1.5">
+              <span class="text-xs font-bold uppercase tracking-wider">Highest Score</span>
+              <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i data-lucide="award" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-navy-950" id="stat-highest-score">0.0%</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Personal best</div>
+          </div>
+
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center justify-between text-slate-500 mb-1.5">
+              <span class="text-xs font-bold uppercase tracking-wider">Completion</span>
+              <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              </div>
+            </div>
+            <div class="text-2xl sm:text-3xl font-extrabold text-navy-950" id="stat-completion-rate">100%</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Full submission rate</div>
+          </div>
+        </div>
+
+        <!-- Available Assessments Section -->
+        <section id="student-quiz-catalog" class="space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80">
+            <div>
+              <h2 class="text-xl font-extrabold text-navy-950">Available Examinations</h2>
+              <p class="text-xs text-slate-500">Pick any assessment to launch distraction-free timed exam mode.</p>
+            </div>
+
+            <!-- Subject Category Filters -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1" id="catalog-category-filters">
+              <button class="filter-pill active" onclick="filterCatalog('all', this)">All Subjects</button>
+              <button class="filter-pill" onclick="filterCatalog('Programming', this)">Programming</button>
+              <button class="filter-pill" onclick="filterCatalog('Web Dev', this)">Web Tech</button>
+              <button class="filter-pill" onclick="filterCatalog('Systems & Security', this)">Systems & Sec</button>
+            </div>
+          </div>
+
+          <!-- Quizzes Grid -->
+          <div id="quiz-catalog-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <!-- Dynamically populated by script.js -->
+          </div>
+        </section>
+
+        <!-- Score Progression & Subject Competency -->
+        <div class="grid lg:grid-cols-12 gap-6 pt-2">
+          <!-- Chart -->
+          <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-bold text-navy-950">Performance Trajectory</h3>
+                <p class="text-xs text-slate-500">Historical percentage over recent examinations</p>
+              </div>
+              <span class="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-semibold">Live Track</span>
+            </div>
+            <div class="h-60 relative">
+              <canvas id="scoreChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Subject Mastery -->
+          <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3.5">
+            <div>
+              <h3 class="text-sm font-bold text-navy-950">Subject Mastery</h3>
+              <p class="text-xs text-slate-500">Proficiency scores by engineering subject</p>
+            </div>
+            <div class="space-y-3 pt-1">
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span>C Systems & Pointers</span>
+                  <span class="text-royal-600">88%</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div class="bg-royal-600 h-full rounded-full" style="width: 88%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span>Python Data Structures</span>
+                  <span class="text-emerald-600">92%</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div class="bg-emerald-500 h-full rounded-full" style="width: 92%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span>Modern JavaScript Core</span>
+                  <span class="text-amber-600">80%</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div class="bg-amber-500 h-full rounded-full" style="width: 80%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span>Cybersecurity Defense</span>
+                  <span class="text-indigo-600">85%</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div class="bg-indigo-600 h-full rounded-full" style="width: 85%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Attempts Table -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-navy-950">Recent Submissions & Scores</h3>
+              <p class="text-xs text-slate-500">Your examination records and pass/fail verification</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/60 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                  <th class="py-3 px-4 sm:px-6">Quiz Title</th>
+                  <th class="py-3 px-4">Subject</th>
+                  <th class="py-3 px-4">Score</th>
+                  <th class="py-3 px-4">Percentage</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Date</th>
+                  <th class="py-3 px-4 sm:px-6 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody id="student-attempts-table" class="divide-y divide-slate-100">
+                <!-- Dynamically rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW 2: TEACHER PANEL (PASSWORD PROTECTED: default 'teacher') -->
+    <div id="view-teacher" class="view-section hidden py-6 sm:py-8 bg-slate-50 min-h-screen">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-7">
+        
+        <!-- Teacher Console Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div>
+            <div class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full mb-1">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-600"></i> Authorized Faculty Console
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-navy-950">Teacher Panel</h1>
+            <p class="text-slate-600 text-xs mt-0.5">Author assessments, add questions, set negative marks, and manage the student gradebook.</p>
+          </div>
+
+          <div class="flex items-center gap-2.5">
+            <button onclick="openCreateQuizModal()" class="btn-primary text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> Author New Quiz
+            </button>
+            <button onclick="exportQuizResultsCSV()" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-2xs">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Gradebook CSV
+            </button>
+            <button onclick="lockTeacherPanel()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors" title="Lock Teacher Console">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i> Lock / Exit
+            </button>
+          </div>
+        </div>
+
+        <!-- Instructor Stats Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Active Quizzes</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-navy-950 mt-1" id="inst-stat-quizzes">4</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">In student catalog</div>
+          </div>
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Submissions</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-royal-600 mt-1" id="inst-stat-attempts">128</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Recorded attempts</div>
+          </div>
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Cohort Average</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">82.4%</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">+4.2% cutoff margin</div>
+          </div>
+          <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Pass Rate</span>
+            <div class="text-2xl sm:text-3xl font-extrabold text-navy-950 mt-1">92.0%</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">60% cutoff standard</div>
+          </div>
+        </div>
+
+        <!-- Managed Assessments Bank -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-navy-950">Published Assessments</h3>
+              <p class="text-xs text-slate-500">Quizzes available to students on their portal</p>
+            </div>
+            <button onclick="openCreateQuizModal()" class="text-xs font-semibold text-royal-600 hover:text-royal-800 flex items-center gap-1">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Quiz
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/60 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                  <th class="py-3 px-4 sm:px-6">Title</th>
+                  <th class="py-3 px-4">Subject</th>
+                  <th class="py-3 px-4">Duration</th>
+                  <th class="py-3 px-4">Questions</th>
+                  <th class="py-3 px-4">Negative Marking</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4 sm:px-6 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="instructor-quizzes-table" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Student Gradebook & Roster -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-navy-950">Student Participation & Gradebook</h3>
+              <p class="text-xs text-slate-500">Live submission records and verification status</p>
+            </div>
+            <div class="relative w-full sm:w-64">
+              <input type="text" id="roster-search" placeholder="Search student or exam..." oninput="filterRoster(this.value)" class="w-full text-xs py-2 pl-8 pr-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-royal-500" />
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200/60 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                  <th class="py-3 px-4 sm:px-6">Student</th>
+                  <th class="py-3 px-4">Student ID</th>
+                  <th class="py-3 px-4">Assessment</th>
+                  <th class="py-3 px-4">Score</th>
+                  <th class="py-3 px-4">Percentage</th>
+                  <th class="py-3 px-4">Time Taken</th>
+                  <th class="py-3 px-4">Date</th>
+                  <th class="py-3 px-4 sm:px-6 text-right">Result</th>
+                </tr>
+              </thead>
+              <tbody id="instructor-roster-table" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW 3: LIVE EXAMINATION ENGINE -->
+    <div id="view-exam" class="view-section hidden bg-slate-100 min-h-screen flex flex-col">
+      
+      <!-- Exam Mode Top Bar -->
+      <header class="bg-navy-950 text-white px-4 sm:px-6 py-3 border-b border-slate-800 flex items-center justify-between shadow-md">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-royal-600 flex items-center justify-center font-bold text-white text-xs">
+            SS
+          </div>
+          <div>
+            <h2 class="text-xs sm:text-sm font-bold leading-tight" id="exam-quiz-title">Assessment Name</h2>
+            <div class="text-[10.5px] text-slate-400 flex items-center gap-2">
+              <span id="exam-subject-badge">Subject</span>
+              <span>•</span>
+              <span id="exam-negative-badge" class="text-amber-400">Negative Marking: Enabled</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Central Synchronized Countdown Timer -->
+        <div class="flex items-center gap-2 bg-navy-900 border border-slate-700/80 px-3 sm:px-4 py-1.5 rounded-xl shadow-inner">
+          <i data-lucide="clock" class="w-4 h-4 text-royal-400"></i>
+          <span class="text-xs text-slate-400 uppercase font-bold tracking-wider hidden sm:inline">Time Left:</span>
+          <span id="exam-timer-display" class="font-mono text-base font-bold text-white tracking-widest">
+            15:00
+          </span>
+        </div>
+
+        <!-- Submit Button -->
+        <div>
+          <button onclick="promptSubmitConfirmation()" class="btn-primary text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 shadow-md">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            <span>Submit Exam</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Exam Split Content -->
+      <div class="flex-1 max-w-7xl mx-auto w-full p-4 sm:p-6 grid lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left: Question & Options Display (8 cols) -->
+        <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-8 flex flex-col justify-between min-h-[500px]">
+          <div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
+              <div class="flex items-center gap-2">
+                <span class="bg-royal-100 text-royal-800 text-xs font-extrabold px-3 py-1 rounded-full" id="exam-question-num-pill">
+                  Question 1 of 10
+                </span>
+                <span class="text-xs text-slate-400 font-medium" id="exam-question-marks-badge">+2.0 Marks / -0.5 Negative</span>
+              </div>
+              <button onclick="toggleMarkForReview()" id="btn-mark-review" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
+                <span id="mark-review-label">Mark for Review</span>
+              </button>
+            </div>
+
+            <!-- Question Body -->
+            <div class="space-y-4">
+              <h3 class="text-sm sm:text-base font-semibold text-slate-900 leading-relaxed" id="exam-question-text">
+                Question loading...
+              </h3>
+
+              <!-- Optional Code Snippet Block -->
+              <div id="exam-code-snippet" class="hidden bg-slate-900 text-slate-100 p-3.5 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800">
+                <code></code>
+              </div>
+
+              <!-- Options Radio List -->
+              <div class="space-y-2.5 pt-3" id="exam-options-container">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div class="pt-6 border-t border-slate-100 flex items-center justify-between gap-3 mt-6">
+            <button onclick="clearCurrentAnswer()" class="text-xs text-slate-500 hover:text-rose-600 font-semibold px-3 py-2 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-1">
+              <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Clear Choice
+            </button>
+
+            <div class="flex items-center gap-2">
+              <button onclick="navigateQuestion(-1)" id="btn-prev-q" class="text-xs font-semibold px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center gap-1">
+                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i> Previous
+              </button>
+              <button onclick="navigateQuestion(1)" id="btn-next-q" class="btn-primary text-xs font-semibold px-5 py-2 rounded-xl flex items-center gap-1">
+                <span>Next</span> <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Question Palette & Status Legend (4 cols) -->
+        <div class="lg:col-span-4 space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-5">
+            <h4 class="text-sm font-bold text-navy-950 mb-3 flex items-center justify-between">
+              <span>Question Palette</span>
+              <span class="text-[11px] text-slate-400 font-normal">Click to jump</span>
+            </h4>
+
+            <div class="grid grid-cols-2 gap-2 text-[11px] font-medium text-slate-600 mb-4 pb-4 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-md bg-emerald-500"></span>
+                <span>Answered</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-md bg-slate-200"></span>
+                <span>Unanswered</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-md bg-amber-500"></span>
+                <span>For Review</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-md border-2 border-royal-600 bg-white"></span>
+                <span>Current</span>
+              </div>
+            </div>
+
+            <!-- Palette Numbers -->
+            <div id="exam-palette-grid" class="grid grid-cols-5 gap-2">
+              <!-- Dynamically populated buttons -->
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
+              <span>Answered: <strong id="summary-answered-count" class="text-emerald-600">0</strong></span>
+              <span>Review: <strong id="summary-review-count" class="text-amber-600">0</strong></span>
+              <span>Left: <strong id="summary-unanswered-count" class="text-slate-700">10</strong></span>
+            </div>
+          </div>
+
+          <div class="bg-royal-50/70 border border-royal-200/60 rounded-xl p-3.5 text-xs text-royal-950 space-y-1">
+            <div class="font-bold flex items-center gap-1.5 text-royal-800">
+              <i data-lucide="shield" class="w-4 h-4"></i> Secure Exam Protocol
+            </div>
+            <p class="text-slate-600 text-[11px] leading-relaxed">
+              Every answer is auto-saved. If your tab accidentally reloads, your timer and selected answers restore automatically.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- VIEW 4: RESULTS & SOLUTIONS REVIEW -->
+    <div id="view-results" class="view-section hidden py-10 bg-slate-50 min-h-screen">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+        
+        <!-- Score Card -->
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+          <div class="p-8 text-center bg-gradient-to-b from-navy-950 to-navy-900 text-white">
+            <div id="res-pass-badge" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider mb-4 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              <i data-lucide="check-circle" class="w-4 h-4"></i> PASSED
+            </div>
+            
+            <h1 class="text-2xl sm:text-3xl font-extrabold" id="res-quiz-title">Assessment Evaluation</h1>
+            <p class="text-slate-300 text-xs mt-1" id="res-timestamp">Completed on November 24, 2026</p>
+
+            <div class="mt-6 flex flex-col items-center justify-center">
+              <div class="text-5xl sm:text-6xl font-black tracking-tight" id="res-score-percent">85%</div>
+              <div class="text-slate-300 text-xs font-semibold mt-1" id="res-marks-ratio">Obtained 17.0 / 20.0 Marks</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-white border-b border-slate-100 text-center p-3">
+            <div class="p-3">
+              <div class="text-xs font-bold uppercase text-slate-400">Correct</div>
+              <div class="text-xl font-extrabold text-emerald-600 mt-0.5" id="res-correct-count">9</div>
+              <div class="text-[11px] text-slate-500">+18.0 marks</div>
+            </div>
+            <div class="p-3">
+              <div class="text-xs font-bold uppercase text-slate-400">Incorrect</div>
+              <div class="text-xl font-extrabold text-rose-600 mt-0.5" id="res-incorrect-count">1</div>
+              <div class="text-[11px] text-slate-500" id="res-negative-deductions">-0.5 marks</div>
+            </div>
+            <div class="p-3">
+              <div class="text-xs font-bold uppercase text-slate-400">Unanswered</div>
+              <div class="text-xl font-extrabold text-slate-600 mt-0.5" id="res-unanswered-count">0</div>
+              <div class="text-[11px] text-slate-500">0.0 marks</div>
+            </div>
+            <div class="p-3">
+              <div class="text-xs font-bold uppercase text-slate-400">Time Taken</div>
+              <div class="text-xl font-extrabold text-navy-950 mt-0.5" id="res-time-taken">06:42</div>
+              <div class="text-[11px] text-slate-500">out of 15:00</div>
+            </div>
+          </div>
+
+          <div class="p-5 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+              <button onclick="retakeCurrentQuiz()" class="btn-primary text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-1.5">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Retake Assessment
+              </button>
+              <button onclick="navigateTo('student')" class="bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors">
+                <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Back to Student Desk
+              </button>
+            </div>
+            <button onclick="window.print()" class="text-xs text-slate-600 hover:text-slate-900 font-semibold flex items-center gap-1">
+              <i data-lucide="printer" class="w-4 h-4"></i> Print Scorecard
+            </button>
+          </div>
+        </div>
+
+        <!-- Question Solution Review -->
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+            <div>
+              <h3 class="text-base font-bold text-navy-950">Technical Solutions & Explanations</h3>
+              <p class="text-xs text-slate-500">Review your choices against verified canonical keys</p>
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+              <button class="review-filter-btn active" onclick="filterReviewQuestions('all', this)">All</button>
+              <button class="review-filter-btn" onclick="filterReviewQuestions('incorrect', this)">Incorrect</button>
+              <button class="review-filter-btn" onclick="filterReviewQuestions('correct', this)">Correct</button>
+            </div>
+          </div>
+
+          <div id="results-review-container" class="space-y-5">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= MODALS & DIALOGS ================= -->
+
+  <!-- 1. TEACHER PASSWORD AUTH MODAL (DEFAULT PASS: teacher) -->
+  <div id="modal-teacher-password" class="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-navy-950 text-sm">Teacher Verification</h3>
+            <p class="text-[11px] text-slate-500">Protected faculty access</p>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-teacher-password')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleTeacherPasswordSubmit(event)" class="space-y-3 text-xs sm:text-sm">
+        <div class="space-y-1">
+          <label class="font-semibold text-slate-700">Enter Faculty Password</label>
+          <div class="relative">
+            <input type="password" id="teacher-pwd-input" required placeholder="Default password is: teacher" class="w-full px-3 py-2 pr-9 border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none" />
+            <button type="button" onclick="togglePasswordVisibility('teacher-pwd-input')" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p class="text-[10.5px] text-slate-400">Default password: <span class="font-mono text-royal-600 font-bold">teacher</span></p>
+        </div>
+
+        <div id="teacher-pwd-error" class="hidden p-2 rounded-lg bg-rose-50 text-rose-700 text-xs font-semibold">
+          Incorrect password. Try "teacher".
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-teacher-password')" class="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary bg-amber-600 hover:bg-amber-500 px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="key" class="w-3.5 h-3.5"></i> Unlock Teacher Panel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. TEACHER QUIZ & QUESTION AUTHORING MODAL -->
+  <div id="modal-create-quiz" class="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="font-extrabold text-navy-950 text-base">Author New Assessment & Questions</h3>
+          <p class="text-xs text-slate-500">Configure quiz specifications, negative marking, and author custom questions.</p>
+        </div>
+        <button onclick="closeModal('modal-create-quiz')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="create-quiz-form" onsubmit="handleCreateQuizSubmit(event)" class="space-y-4 text-xs sm:text-sm">
+        
+        <!-- Step 1: Quiz Meta -->
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+          <div class="font-bold text-navy-950 text-xs flex items-center gap-1.5 text-royal-700">
+            <i data-lucide="settings" class="w-4 h-4"></i> 1. Assessment Parameters
+          </div>
+
+          <div class="space-y-1">
+            <label class="font-semibold text-slate-700">Quiz Title *</label>
+            <input type="text" id="cq-title" required placeholder="e.g. Distributed Database Systems & ACID Midterm" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-royal-500 focus:outline-none" />
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-700">Subject Domain *</label>
+              <select id="cq-subject" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-royal-500 focus:outline-none">
+                <option value="C Programming">C Programming</option>
+                <option value="Python Programming">Python Programming</option>
+                <option value="JavaScript">JavaScript</option>
+                <option value="Cybersecurity">Cybersecurity Fundamentals</option>
+                <option value="Computer Networks">Computer Networks</option>
+                <option value="Database Management">Database Management</option>
+                <option value="General Technical Knowledge">General Tech Knowledge</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-700">Difficulty</label>
+              <select id="cq-difficulty" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-royal-500 focus:outline-none">
+                <option value="Beginner">Beginner</option>
+                <option value="Intermediate" selected>Intermediate</option>
+                <option value="Advanced">Advanced</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-3 gap-3">
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-700">Duration (Minutes)</label>
+              <input type="number" id="cq-duration" min="5" max="180" value="15" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl" />
+            </div>
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-700">Cutoff (%)</label>
+              <input type="number" id="cq-passing" min="30" max="90" value="60" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl" />
+            </div>
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-700">Negative Marks</label>
+              <input type="number" id="cq-negative" step="0.25" min="0" max="2" value="0.5" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl" />
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="font-semibold text-slate-700">Description</label>
+            <input type="text" id="cq-description" placeholder="Brief outline of topics tested..." class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl" />
+          </div>
+        </div>
+
+        <!-- Step 2: Custom Question Builder -->
+        <div class="p-3.5 bg-blue-50/50 rounded-xl border border-blue-200/80 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="font-bold text-navy-950 text-xs flex items-center gap-1.5 text-royal-700">
+              <i data-lucide="help-circle" class="w-4 h-4"></i> 2. Add Custom Question (Optional)
+            </div>
+            <span class="text-[10.5px] text-slate-500">High-yield standard questions will also be loaded</span>
+          </div>
+
+          <div class="space-y-1">
+            <label class="font-semibold text-slate-700">Question Text</label>
+            <textarea id="cq-custom-qtext" rows="2" placeholder="e.g. In relational databases, what property guarantees that all database transactions will be processed completely or not at all?" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl"></textarea>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-2 text-xs">
+            <div>
+              <label class="font-medium text-slate-600">Option A</label>
+              <input type="text" id="cq-opt-0" placeholder="e.g. Atomicity" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg" />
+            </div>
+            <div>
+              <label class="font-medium text-slate-600">Option B</label>
+              <input type="text" id="cq-opt-1" placeholder="e.g. Consistency" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg" />
+            </div>
+            <div>
+              <label class="font-medium text-slate-600">Option C</label>
+              <input type="text" id="cq-opt-2" placeholder="e.g. Isolation" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg" />
+            </div>
+            <div>
+              <label class="font-medium text-slate-600">Option D</label>
+              <input type="text" id="cq-opt-3" placeholder="e.g. Durability" class="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg" />
+            </div>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3 pt-1">
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-700">Correct Answer Option *</label>
+              <select id="cq-correct-choice" class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg">
+                <option value="0">Option A</option>
+                <option value="1">Option B</option>
+                <option value="2">Option C</option>
+                <option value="3">Option D</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="font-semibold text-slate-700">Explanation for Students</label>
+              <input type="text" id="cq-explanation" placeholder="e.g. Atomicity ensures an 'all or nothing' guarantee." class="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeModal('modal-create-quiz')" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+            Cancel
+          </button>
+          <button type="submit" class="btn-primary px-5 py-2.5 font-semibold rounded-xl flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i> Publish to Student Portal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. PRE-EXAM INSTRUCTIONS MODAL -->
+  <div id="modal-instructions" class="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-10 h-10 rounded-xl bg-royal-100 text-royal-600 flex items-center justify-center font-bold">
+            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-extrabold text-navy-950 text-base" id="modal-inst-title">Assessment Guidelines</h3>
+            <span class="text-xs text-slate-500" id="modal-inst-subtitle">SkillSphere Official Test Engine</span>
+          </div>
+        </div>
+        <button onclick="closeModal('modal-instructions')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs sm:text-sm text-slate-600">
+        <div class="p-3 bg-slate-50 rounded-xl flex items-center justify-between font-semibold text-slate-700">
+          <span>Questions: <strong id="modal-inst-qcount" class="text-navy-900">10 MCQs</strong></span>
+          <span>Duration: <strong id="modal-inst-duration" class="text-navy-900">15 Minutes</strong></span>
+        </div>
+        <div class="p-3 bg-slate-50 rounded-xl flex items-center justify-between font-semibold text-slate-700">
+          <span>Passing Cutoff: <strong id="modal-inst-passing" class="text-emerald-700">60%</strong></span>
+          <span>Negative Marking: <strong id="modal-inst-negative" class="text-rose-600">-0.50 marks/wrong</strong></span>
+        </div>
+
+        <ul class="list-disc pl-5 space-y-1.5 text-slate-600 text-xs leading-relaxed pt-1">
+          <li><strong>Distraction-Free Mode:</strong> The timer runs continuously once launched.</li>
+          <li><strong>Zero Data Loss:</strong> If you accidentally refresh, answers and remaining time will restore automatically.</li>
+          <li><strong>Auto-Submission:</strong> At <code class="font-mono text-rose-600">00:00</code> remaining, answers are auto-graded and saved.</li>
+        </ul>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+        <button onclick="closeModal('modal-instructions')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+          Cancel
+        </button>
+        <button onclick="confirmAndLaunchExam()" class="btn-primary px-5 py-2.5 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-md shadow-royal-600/20">
+          <i data-lucide="play" class="w-3.5 h-3.5"></i> I Understand, Start Exam
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. SUBMIT CONFIRMATION MODAL -->
+  <div id="modal-submit-confirm" class="fixed inset-0 z-50 bg-navy-950/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scale-up">
+      <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+      </div>
+
+      <div class="text-center space-y-1">
+        <h3 class="text-base font-bold text-navy-950">Confirm Final Submission?</h3>
+        <p class="text-xs text-slate-500">You cannot modify responses once submitted.</p>
+      </div>
+
+      <div class="bg-slate-50 rounded-xl p-3.5 text-xs space-y-2 font-medium">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Answered:</span>
+          <strong id="confirm-answered" class="text-emerald-600">8</strong>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Marked for Review:</span>
+          <strong id="confirm-review" class="text-amber-600">1</strong>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Unanswered:</span>
+          <strong id="confirm-unanswered" class="text-rose-600">1</strong>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-2">
+        <button onclick="closeModal('modal-submit-confirm')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+          Return to Test
+        </button>
+        <button onclick="finalizeAndScoreQuiz()" class="btn-primary bg-emerald-600 hover:bg-emerald-500 px-5 py-2 text-xs font-semibold rounded-xl flex items-center gap-1.5">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i> Confirm & Grade
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= COMPACT FOOTER ================= -->
+  <footer class="bg-navy-950 text-slate-400 py-6 border-t border-slate-800 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-2 text-white font-bold">
+        <i data-lucide="layers" class="w-4 h-4 text-royal-500"></i>
+        <span>SkillSphere Assessment Portal</span>
+      </div>
+      <div class="text-slate-400 text-[11px]">
+        Default Teacher Password: <span class="text-amber-400 font-mono font-bold">teacher</span> • Firebase Project: <span class="text-royal-400 font-mono">assesment-sphere</span>
+      </div>
+      <div>© 2026 SkillSphere. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="script.js"></script>
+</body>
+</html>

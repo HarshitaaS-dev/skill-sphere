@@ -1,0 +1,272 @@
+/* ==========================================================================
+   SkillSphere Design System & Component Stylesheet
+   Brand Palette: Deep Navy Blue (#050a14, #0a1426) | Royal Blue (#2563eb)
+   ========================================================================== */
+
+:root {
+  --navy-deep: #050a14;
+  --navy-base: #0a1426;
+  --navy-light: #101d36;
+  --royal-blue: #2563eb;
+  --royal-hover: #1d4ed8;
+  --slate-bg: #f8fafc;
+}
+
+/* Smooth Base Resets */
+*, ::before, ::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--slate-bg);
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Primary Action Buttons */
+.btn-primary {
+  background-color: #2563eb;
+  color: #ffffff;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-primary:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0px);
+}
+
+.btn-secondary-dark {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  transition: all 0.18s ease;
+}
+.btn-secondary-dark:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Navigation Buttons */
+.nav-btn {
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nav-btn:hover {
+  color: #1e293b;
+}
+.nav-btn.active {
+  background-color: #ffffff;
+  color: #0a1426;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Catalog Filter Pills */
+.filter-pill {
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.filter-pill:hover {
+  border-color: #94a3b8;
+  color: #1e293b;
+}
+.filter-pill.active {
+  background-color: #0a1426;
+  color: #ffffff;
+  border-color: #0a1426;
+  box-shadow: 0 2px 4px rgba(10, 20, 38, 0.15);
+}
+
+/* Result Review Filter Buttons */
+.review-filter-btn {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.review-filter-btn.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+/* Examination Option Cards */
+.exam-option-card {
+  padding: 0.875rem 1.15rem;
+  border-radius: 0.875rem;
+  border: 1.5px solid #e2e8f0;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.exam-option-card:hover {
+  border-color: #93c5fd;
+  background-color: #f8fafc;
+  transform: translateX(2px);
+}
+.exam-option-card.selected {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+  box-shadow: 0 0 0 1px #2563eb, 0 3px 6px -1px rgba(37, 99, 235, 0.1);
+}
+.exam-option-card.selected .option-indicator {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.option-indicator {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  border: 1.5px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #475569;
+  background-color: #f8fafc;
+  margin-right: 0.875rem;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+/* Question Palette Navigation Buttons */
+.palette-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  transition: all 0.15s ease;
+  border: 1.5px solid #e2e8f0;
+  background-color: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+}
+.palette-btn:hover {
+  filter: brightness(0.96);
+  transform: scale(1.05);
+}
+
+.palette-btn.unanswered {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+.palette-btn.answered {
+  background-color: #10b981;
+  color: #ffffff;
+  border-color: #059669;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+}
+.palette-btn.review {
+  background-color: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
+}
+.palette-btn.current {
+  border-color: #2563eb !important;
+  border-width: 2.5px !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+/* Animations */
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.animate-scale-up {
+  animation: scaleUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Toast Notifications */
+.toast {
+  pointer-events: auto;
+  min-width: 280px;
+  max-width: 400px;
+  padding: 0.8rem 1.15rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  animation: scaleUp 0.18s ease forwards;
+}
+.toast-success {
+  border-left: 4px solid #10b981;
+}
+.toast-info {
+  border-left: 4px solid #2563eb;
+}
+.toast-warning {
+  border-left: 4px solid #f59e0b;
+}
+
+/* Print Styles */
+@media print {
+  header, footer, nav, button, .btn-primary {
+    display: none !important;
+  }
+  #view-results {
+    padding: 0;
+    background: #ffffff;
+  }
+  .max-w-4xl {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
